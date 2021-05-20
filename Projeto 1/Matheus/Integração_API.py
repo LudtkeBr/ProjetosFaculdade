@@ -6,7 +6,8 @@ from pandas.io.sql import to_sql
 from sqlalchemy import create_engine, types
 import json
 import requests
-
+from itertools import chain
+ 
 # URL para fazer a requisição da API.
 url = "https://covid-api.mmediagroup.fr/v1/cases"
 
@@ -24,21 +25,13 @@ dados = retorno.text
 # Carregamos e transformamos o texto para o formato Json com a função loads() da biblioteca json.
 dados = json.loads(dados)
 
-# Criamos uma lista vazia para armazenamento da primeira posição do JSON
-lista = []
+# descompactando os valores do dict 'dados.values()' com a função chain do módulo itertools
+data_frame = pd.DataFrame(chain.from_iterable(map(lambda sec: sec.values(), dados.values())))
 
-# Aberto o laço de repetição "for" para transitar em todos os registros do JSON e popular a lista que criamos acima.
-for i in dados:
-    lista.append(i) # A função append concatena os registros já existentes com o registro novo de cada iteração no loop.  
-
-data_frame = pd.DataFrame(lista) # Criamos um DataFrame com base na lista que criamos.
+print(data_frame)
 
 # Cria a engine/método de conexão para conectar ao mysql instalado localmente
 conn = create_engine('mysql+mysqlconnector://root:12345@localhost/staging', connect_args={'auth_plugin': 'mysql_native_password'})
 
 # Método to_sql transforma o DataFrame em um insert automaticamente, passando a engine criada acima para conectar ao banco
 to_sql(data_frame, 'PAIS', conn, schema='staging', if_exists='append')
-
-
-
-
